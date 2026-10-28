@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — Campus Resolve{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 w-full py-8 sm:py-16">
+  
+  <div class="bg-surface-container-lowest rounded-2xl p-6 sm:p-8 shadow-sm border border-surface-container-high space-y-6">
+    
+    <!-- Header -->
+    <div class="text-center space-y-2">
+      <div class="w-12 h-12 rounded-full bg-surface-container-low border border-surface-container-high mx-auto flex items-center justify-center text-secondary shadow-sm">
+        <span class="material-symbols-outlined text-[26px]">lock</span>
+      </div>
+      <h1 class="text-xl sm:text-2xl font-bold text-on-surface">Campus Resolve Sign In</h1>
+      <p class="text-xs sm:text-sm text-on-surface-variant">Enter your university credentials to access the portal</p>
+    </div>
+
+    <!-- Login Form -->
+    <form method="POST" action="{{ url_for('login_view') }}" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <!-- Email Field -->
+      <div class="space-y-1.5">
+        <label for="email" class="block text-xs font-semibold text-on-surface">College Email Address</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">mail</span>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            required 
+            placeholder="student@campus.edu or admin@campus.edu" 
+            class="w-full bg-surface-container-low text-on-surface text-sm pl-10 pr-3 py-2.5 rounded-xl border border-surface-container-high outline-none focus:border-secondary focus:bg-surface-container-lowest transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="space-y-1.5">
+        <label for="password" class="block text-xs font-semibold text-on-surface">Password</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">key</span>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required 
+            placeholder="••••••••" 
+            class="w-full bg-surface-container-low text-on-surface text-sm pl-10 pr-3 py-2.5 rounded-xl border border-surface-container-high outline-none focus:border-secondary focus:bg-surface-container-lowest transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button 
+        type="submit" 
+        class="w-full py-2.5 px-4 rounded-xl bg-secondary text-on-secondary font-semibold text-sm shadow-md hover:bg-secondary/90 active:scale-98 transition-all flex items-center justify-center gap-2 mt-2"
+      >
+        <span class="material-symbols-outlined text-[18px]">login</span>
+        <span>Sign In to Portal</span>
+      </button>
+    </form>
+
+    <!-- Development Credentials Helper -->
+    <div class="bg-surface-container-low rounded-xl p-3.5 border border-surface-container-high space-y-2">
+      <div class="flex items-center gap-1.5 text-xs font-bold text-on-surface">
+        <span class="material-symbols-outlined text-secondary text-[16px]">info</span>
+        <span>Management Access</span>
+      </div>
+      <div class="flex items-center justify-between bg-surface-container-lowest p-2 rounded-lg border border-surface-container-high text-[11px]">
+        <div>
+          <span class="font-semibold text-on-surface">Admin Email:</span> admin@campus.edu
+        </div>
+        <span class="font-mono bg-surface-container px-1.5 py-0.5 rounded text-[10px]">Admin@123</span>
+      </div>
+    </div>
+
+    <!-- Registration Link -->
+    <div class="text-center pt-2 text-xs text-on-surface-variant">
+      <span>Are you a new student?</span>
+      <a href="{{ url_for('register_view') }}" class="font-semibold text-secondary hover:underline ml-1">Create an account here</a>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
