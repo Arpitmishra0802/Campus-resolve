@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Command Center — Campus Resolve{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 w-full space-y-space-md pb-space-xl">
+
+  <!-- Administrative Identity Badge & Quick Controls -->
+  <section class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-surface-container-high flex flex-col gap-space-sm mt-space-sm">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-space-sm">
+        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm">
+          <span class="material-symbols-outlined text-[20px]">shield_person</span>
+        </div>
+        <div>
+          <h2 class="font-title-md text-title-md text-on-surface font-bold">Admin Command Center</h2>
+          <p class="font-label-sm text-label-sm text-secondary font-semibold">
+            Officer: {{ session.get('user_name', 'Estate & Facilities Officer') }} • {{ session.get('user_email') }}
+          </p>
+        </div>
+      </div>
+      <span class="inline-flex items-center px-2.5 py-1 rounded-full font-label-sm text-xs bg-surface-container-high text-on-surface-variant font-medium">
+        Campus Shift: Active
+      </span>
+    </div>
+
+    <!-- Quick Health Ribbon -->
+    <div class="grid grid-cols-2 gap-space-xs pt-space-xs">
+      <div class="bg-surface-container-low p-space-xs rounded-lg flex items-center gap-space-xs border border-surface-container-high">
+        <span class="material-symbols-outlined text-secondary text-[18px]">verified_user</span>
+        <span class="font-label-sm text-label-sm text-on-surface">SLA Target: 94.2%</span>
+      </div>
+      <div class="bg-surface-container-low p-space-xs rounded-lg flex items-center gap-space-xs border border-surface-container-high">
+        <span class="material-symbols-outlined text-error text-[18px]">warning</span>
+        <span class="font-label-sm text-label-sm text-on-surface">{{ counts.submitted }} Triage Pending</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metric Badges Carousel / Grid matching Stitch original -->
+  <section class="flex flex-col space-y-space-xs">
+    <div class="flex items-center justify-between px-1">
+      <span class="font-label-md text-label-md text-on-surface-variant font-semibold uppercase tracking-wider">Operational Triage</span>
+      <span class="font-label-sm text-label-sm text-secondary font-medium">Live Database Synced</span>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <!-- Total -->
+      <a href="{{ url_for('management_portal_view') }}" class="bg-surface-container-lowest p-2.5 rounded-xl text-center shadow-sm border border-surface-container-high hover:border-secondary transition-colors flex flex-col justify-center items-center">
+        <span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-none">{{ counts.total }}</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant text-[11px] mt-1 truncate w-full">Total</span>
+      </a>
+
+      <!-- Submitted (Amber) -->
+      <a href="{{ url_for('management_portal_view', status='Submitted') }}" class="bg-[#fff7ed] p-2.5 rounded-xl text-center shadow-sm border border-[#ffedd5] hover:border-[#f97316] transition-colors flex flex-col justify-center items-center">
+        <span class="font-headline-sm text-headline-sm text-[#c2410c] font-bold leading-none">{{ counts.submitted }}</span>
+        <span class="font-label-sm text-label-sm text-[#9a3412] text-[11px] mt-1 truncate w-full">Submitted</span>
+      </a>
+
+      <!-- In Progress (Blue) -->
+      <a href="{{ url_for('management_portal_view', status='In Progress') }}" class="bg-[#eff6ff] p-2.5 rounded-xl text-center shadow-sm border border-[#dbeafe] hover:border-secondary transition-colors flex flex-col justify-center items-center">
+        <span class="font-headline-sm text-headline-sm text-secondary font-bold leading-none">{{ counts.in_progress }}</span>
+        <span class="font-label-sm text-label-sm text-secondary font-medium text-[11px] mt-1 truncate w-full">Active</span>
+      </a>
+
+      <!-- Resolved (Green) -->
+      <a href="{{ url_for('management_portal_view', status='Resolved') }}" class="bg-[#f0fdf4] p-2.5 rounded-xl text-center shadow-sm border border-[#dcfce7] hover:border-[#16a34a] transition-colors flex flex-col justify-center items-center">
+        <span class="font-headline-sm text-headline-sm text-[#15803d] font-bold leading-none">{{ counts.resolved }}</span>
+        <span class="font-label-sm text-label-sm text-[#166534] font-medium text-[11px] mt-1 truncate w-full">Resolved</span>
+      </a>
+
+      <!-- Closed (Slate) -->
+      <a href="{{ url_for('management_portal_view', status='Closed') }}" class="col-span-2 sm:col-span-1 bg-surface-container-high p-2.5 rounded-xl text-center shadow-sm border border-surface-container-highest hover:border-outline transition-colors flex flex-col justify-center items-center">
+        <span class="font-headline-sm text-headline-sm text-on-surface-variant font-bold leading-none">{{ counts.closed }}</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant text-[11px] mt-1 truncate w-full">Closed</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Filter & Search Controls -->
+  <section class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-surface-container-high space-y-space-sm">
+    <form method="GET" action="{{ url_for('management_portal_view') }}" class="space-y-space-sm">
+      
+      <!-- Search Bar -->
+      <div class="relative w-full">
+        <span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-[20px]">search</span>
+        <input 
+          class="w-full bg-surface-container-low text-on-surface placeholder:text-outline text-body-sm font-body-sm pl-10 pr-3 py-2 rounded-lg outline-none focus:bg-surface-container-lowest border border-transparent focus:border-secondary transition-colors" 
+          placeholder="Search ticket, student name, or location..." 
+          type="text" 
+          name="search" 
+          value="{{ search or '' }}"
+        />
+      </div>
+
+      <!-- Quick Dropdown Pill Row -->
+      <div class="flex flex-wrap sm:flex-nowrap items-center gap-space-xs overflow-x-auto pb-1 no-scrollbar">
+        
+        <!-- Category -->
+        <div class="relative shrink-0 flex-1 sm:flex-none">
+          <select name="category" onchange="this.form.submit()" class="w-full appearance-none bg-surface-container-low text-on-surface font-label-md text-label-md pl-3 pr-7 py-2 rounded-lg outline-none border border-transparent focus:border-secondary">
+            <option value="All" {% if selected_category == 'All' or not selected_category %}selected{% endif %}>Category: All</option>
+            <option value="Electrical" {% if selected_category == 'Electrical' %}selected{% endif %}>Electrical</option>
+            <option value="Cleaning" {% if selected_category == 'Cleaning' %}selected{% endif %}>Cleaning</option>
+            <option value="Internet" {% if selected_category == 'Internet' %}selected{% endif %}>Internet</option>
+            <option value="Classroom Equipment" {% if selected_category == 'Classroom Equipment' %}selected{% endif %}>Classroom Equipment</option>
+            <option value="Plumbing" {% if selected_category == 'Plumbing' %}selected{% endif %}>Plumbing</option>
+            <option value="Other" {% if selected_category == 'Other' %}selected{% endif %}>Other</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-1.5 top-2.5 pointer-events-none text-on-surface-variant text-[16px]">expand_more</span>
+        </div>
+
+        <!-- Priority -->
+        <div class="relative shrink-0 flex-1 sm:flex-none">
+          <select name="priority" onchange="this.form.submit()" class="w-full appearance-none bg-surface-container-low text-on-surface font-label-md text-label-md pl-3 pr-7 py-2 rounded-lg outline-none border border-transparent focus:border-secondary">
+            <option value="All" {% if selected_priority == 'All' or not selected_priority %}selected{% endif %}>Priority: All</option>
+            <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+            <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+            <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
+            <option value="Critical" {% if selected_priority == 'Critical' %}selected{% endif %}>Critical</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-1.5 top-2.5 pointer-events-none text-on-surface-variant text-[16px]">expand_more</span>
+        </div>
+
+        <!-- Status -->
+        <div class="relative shrink-0 flex-1 sm:flex-none">
+          <select name="status" onchange="this.form.submit()" class="w-full appearance-none bg-surface-container-low text-on-surface font-label-md text-label-md pl-3 pr-7 py-2 rounded-lg outline-none border border-transparent focus:border-secondary">
+            <option value="All" {% if selected_status == 'All' or not selected_status %}selected{% endif %}>Status: All</option>
+            <option value="Submitted" {% if selected_status == 'Submitted' %}selected{% endif %}>Submitted</option>
+            <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+            <option value="Resolved" {% if selected_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+            <option value="Closed" {% if selected_status == 'Closed' %}selected{% endif %}>Closed</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-1.5 top-2.5 pointer-events-none text-on-surface-variant text-[16px]">expand_more</span>
+        </div>
+
+        <!-- Filter / Reset -->
+        <div class="flex items-center gap-2">
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold">
+            Apply
+          </button>
+          {% if search or (selected_status and selected_status != 'All') or (selected_category and selected_category != 'All') or (selected_priority and selected_priority != 'All') %}
+            <a href="{{ url_for('management_portal_view') }}" class="text-xs text-outline hover:text-on-surface">Reset</a>
+          {% endif %}
+        </div>
+
+      </div>
+    </form>
+  </section>
+
+  <!-- Ticket Feed Header -->
+  <div class="flex items-center justify-between px-1 pt-1">
+    <div class="flex items-center gap-2">
+      <span class="font-title-sm text-title-sm text-on-surface font-bold">Queue Triage</span>
+      <span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-semibold">
+        {{ complaints|length }} Active
+      </span>
+    </div>
+    <a href="{{ url_for('management_portal_view') }}" class="flex items-center gap-1 font-label-sm text-label-sm text-secondary hover:underline">
+      <span class="material-symbols-outlined text-[16px]">sync</span>
+      <span>Refresh</span>
+    </a>
+  </div>
+
+  <!-- Complaint Cards Section -->
+  <section class="space-y-space-md">
+    {% if complaints %}
+      {% for c in complaints %}
+        <article class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container-high overflow-hidden transition-all duration-300">
+          <div class="p-space-md space-y-space-sm">
+            
+            <!-- Header Ribbon -->
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold text-secondary">#{{ c.ticket_id }}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container text-on-surface-variant">
+                    {{ c.category }}
+                  </span>
+                </div>
+                <h3 class="font-title-md text-title-md text-on-surface font-semibold mt-1">{{ c.title }}</h3>
+              </div>
+
+              <!-- Priority Badge -->
+              <div>
+                {% if c.priority == 'Critical' %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-error text-on-error font-bold">
+                    Critical
+                  </span>
+                {% elif c.priority == 'High' %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-error-container text-on-error-container font-semibold">
+                    High Priority
+                  </span>
+                {% elif c.priority == 'Medium' %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-surface-container-high text-on-surface font-medium">
+                    Medium
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-surface-container-low text-on-surface-variant font-medium">
+                    Low
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Student Meta -->
+            <div class="flex items-center gap-2 bg-surface-container-low p-2 rounded-lg border border-surface-container-high">
+              <div class="w-7 h-7 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                {{ c.student_name[0] }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-label-sm text-label-sm text-on-surface font-medium truncate">{{ c.student_name }}</p>
+                <p class="font-label-sm text-label-sm text-outline truncate text-[11px]">{{ c.student_email }} • Logged {{ c.created_at }}</p>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <p class="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+              {{ c.description }}
+            </p>
+
+            <!-- Inline Badges & Quick State -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-surface-container-low">
+              <div class="flex items-center gap-2">
+                <!-- Status Pill -->
+                {% if c.status == 'Submitted' %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#fff7ed] text-[#9a3412]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
+                    Submitted
+                  </span>
+                {% elif c.status == 'In Progress' %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                    <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    In Progress
+                  </span>
+                {% elif c.status == 'Resolved' %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#166534]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                    Resolved
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant">
+                    <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                    Closed
+                  </span>
+                {% endif %}
+
+                <!-- Location -->
+                <span class="text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">pin_drop</span> {{ c.location }}
+                </span>
+              </div>
+
+              <!-- Manage Ticket Drawer Toggle -->
+              <div class="flex items-center gap-2">
+                <a href="{{ url_for('complaint_detail_view', ticket_id=c.ticket_id) }}" class="px-3 py-1.5 rounded-lg border border-surface-container-high hover:bg-surface-container text-xs font-semibold transition-colors">
+                  Full Details &amp; History
+                </a>
+                <button 
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-transform" 
+                  onclick="toggleTicketDrawer('{{ c.ticket_id }}')"
+                >
+                  <span>Manage Ticket</span>
+                  <span class="material-symbols-outlined text-[16px]" id="drawerIcon_{{ c.ticket_id }}">expand_more</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Expanded Interactive Resolution Panel matching Stitch code.html -->
+          <div class="hidden bg-surface-container-low p-space-md space-y-space-md border-t border-surface-container-high" id="drawerPanel_{{ c.ticket_id }}">
+            
+            <!-- Photo Evidence Placeholder / View if present -->
+            {% if c.image %}
+              <div class="space-y-space-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-label-sm text-label-sm text-on-surface font-semibold flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px] text-secondary">image</span>
+                    Photo Evidence Attached
+                  </span>
+                  <a href="{{ url_for('static', filename=c.image) }}" target="_blank" class="font-label-sm text-label-sm text-secondary font-medium hover:underline">
+                    View Full Image
+                  </a>
+                </div>
+                <div class="relative w-full h-44 rounded-xl overflow-hidden shadow-inner bg-surface-container-high border border-surface-container-high">
+                  <img class="w-full h-full object-contain" src="{{ url_for('static', filename=c.image) }}" alt="Ticket Evidence"/>
+                  <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-inverse-surface/80 text-inverse-on-surface font-label-sm text-label-sm">
+                    {{ c.location }}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Form for Priority, Status, Remarks -->
+            <form method="POST" action="{{ url_for('update_complaint_status_view', ticket_id=c.ticket_id) }}" class="space-y-space-md">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+              <!-- Priority Selector -->
+              <div class="space-y-1.5">
+                <label class="font-label-sm text-label-sm text-on-surface font-semibold">Triage Priority Level</label>
+                <div class="grid grid-cols-4 gap-1.5">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="priority" value="Low" class="hidden peer" {% if c.priority == 'Low' %}checked{% endif %}/>
+                    <div class="py-1.5 px-2 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center hover:bg-surface-container-high peer-checked:bg-surface-container-highest peer-checked:font-bold transition-colors">
+                      Low
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="priority" value="Medium" class="hidden peer" {% if c.priority == 'Medium' %}checked{% endif %}/>
+                    <div class="py-1.5 px-2 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center hover:bg-surface-container-high peer-checked:bg-[#fef3c7] peer-checked:text-[#b45309] peer-checked:font-bold transition-colors">
+                      Medium
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="priority" value="High" class="hidden peer" {% if c.priority == 'High' %}checked{% endif %}/>
+                    <div class="py-1.5 px-2 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center hover:bg-surface-container-high peer-checked:bg-error-container peer-checked:text-on-error-container peer-checked:font-bold transition-colors">
+                      High
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="priority" value="Critical" class="hidden peer" {% if c.priority == 'Critical' %}checked{% endif %}/>
+                    <div class="py-1.5 px-2 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center hover:bg-surface-container-high peer-checked:bg-error peer-checked:text-on-error peer-checked:font-bold transition-colors">
+                      Critical
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Status Lifecycle Pill Selector -->
+              <div class="space-y-1.5">
+                <label class="font-label-sm text-label-sm text-on-surface font-semibold">Update Lifecycle Stage</label>
+                <div class="grid grid-cols-4 gap-1.5">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="status" value="Submitted" class="hidden peer" {% if c.status == 'Submitted' %}checked{% endif %}/>
+                    <div class="py-1.5 px-1 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center peer-checked:bg-[#fff7ed] peer-checked:text-[#9a3412] peer-checked:font-bold">
+                      Submitted
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="status" value="In Progress" class="hidden peer" {% if c.status == 'In Progress' %}checked{% endif %}/>
+                    <div class="py-1.5 px-1 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center peer-checked:bg-secondary peer-checked:text-on-secondary peer-checked:font-bold">
+                      In Progress
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="status" value="Resolved" class="hidden peer" {% if c.status == 'Resolved' %}checked{% endif %}/>
+                    <div class="py-1.5 px-1 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center peer-checked:bg-[#16a34a] peer-checked:text-on-primary peer-checked:font-bold">
+                      Resolved
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="status" value="Closed" class="hidden peer" {% if c.status == 'Closed' %}checked{% endif %}/>
+                    <div class="py-1.5 px-1 rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface text-center peer-checked:bg-surface-container-highest peer-checked:text-on-surface peer-checked:font-bold">
+                      Closed
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Remarks Input -->
+              <div class="space-y-1">
+                <label class="font-label-sm text-label-sm text-on-surface font-semibold">Facilities Remarks &amp; Student Broadcast</label>
+                <textarea 
+                  name="remarks" 
+                  class="w-full bg-surface-container-lowest text-on-surface text-body-sm font-body-sm p-3 rounded-xl outline-none focus:ring-1 focus:ring-secondary placeholder:text-outline border border-surface-container-high" 
+                  placeholder="Enter official progress update or resolution remarks for student..." 
+                  rows="3"
+                >{{ c.latest_remark or '' }}</textarea>
+              </div>
+
+              <!-- Action Cluster -->
+              <div class="flex flex-col gap-2 pt-1">
+                <button 
+                  type="submit" 
+                  name="action" 
+                  value="update_status" 
+                  class="w-full py-2.5 px-4 rounded-xl bg-secondary text-on-secondary font-title-sm text-title-sm shadow-md hover:opacity-95 active:scale-98 transition flex items-center justify-center gap-1.5"
+                >
+                  <span class="material-symbols-outlined text-[18px]">outgoing_mail</span>
+                  <span>Update Status &amp; Notify Student</span>
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                  <button 
+                    type="submit" 
+                    name="action" 
+                    value="resolve" 
+                    onclick="this.form.querySelector('input[name=status][value=Resolved]').checked = true"
+                    class="py-2 px-3 rounded-xl bg-[#16a34a] text-on-primary font-label-md text-label-md font-semibold shadow-sm hover:opacity-90 flex items-center justify-center gap-1"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">task_alt</span>
+                    <span>Mark as Resolved</span>
+                  </button>
+                  <button 
+                    type="submit" 
+                    name="action" 
+                    value="close" 
+                    onclick="this.form.querySelector('input[name=status][value=Closed]').checked = true"
+                    class="py-2 px-3 rounded-xl bg-surface-container-highest text-on-surface-variant font-label-md text-label-md font-semibold hover:bg-outline-variant flex items-center justify-center gap-1"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">archive</span>
+                    <span>Close Ticket</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+
+            <!-- Audit Trail Strip -->
+            <div class="flex items-center gap-2 pt-2 text-outline font-label-sm text-label-sm border-t border-surface-container-high">
+              <span class="material-symbols-outlined text-[16px]">history_edu</span>
+              <span>Updated on {{ c.updated_at }} {% if c.latest_handler %}by {{ c.latest_handler }}{% endif %}</span>
+            </div>
+
+          </div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <!-- Empty Triage State -->
+      <div class="bg-surface-container-lowest rounded-xl p-8 text-center border border-surface-container-high shadow-sm space-y-3">
+        <span class="material-symbols-outlined text-[36px] text-outline">done_all</span>
+        <h3 class="text-base font-bold text-on-surface">Queue Clear</h3>
+        <p class="text-xs text-on-surface-variant max-w-sm mx-auto">
+          No complaints match the selected filter criteria. All campus grievances in this view are up to date.
+        </p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Campus Facility Announcement Toast Banner matching Stitch design -->
+  <section class="bg-primary-container text-on-primary-container p-space-md rounded-xl flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-space-sm">
+      <span class="material-symbols-outlined text-secondary-fixed text-[24px]">broadcast_on_personal</span>
+      <div>
+        <p class="font-title-sm text-title-sm text-on-primary font-semibold">Campus Maintenance Broadcast</p>
+        <p class="font-label-sm text-label-sm text-primary-fixed-dim">All facility teams active. Routine electrical checks slated for 18:00.</p>
+      </div>
+    </div>
+    <button aria-label="Dismiss Notification" onclick="this.closest('section').remove()" class="p-1 rounded-full text-on-primary hover:bg-white/10 transition-colors">
+      <span class="material-symbols-outlined text-[18px]">close</span>
+    </button>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleTicketDrawer(ticketId) {
+    const panel = document.getElementById('drawerPanel_' + ticketId);
+    const icon = document.getElementById('drawerIcon_' + ticketId);
+    if (!panel) return;
+    
+    if (panel.classList.contains('hidden')) {
+      panel.classList.remove('hidden');
+      if (icon) icon.innerText = 'expand_less';
+    } else {
+      panel.classList.add('hidden');
+      if (icon) icon.innerText = 'expand_more';
+    }
+  }
+</script>
+{% endblock %}
+
