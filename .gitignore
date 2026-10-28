@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.venv/
+venv/
+ENV/
+temp/
+
+# SQLite Database & Uploads
+*.db
+*.sqlite3
+instance/
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Environment and secrets
+.env
+
+# Antigravity & IDE
+.vscode/
+.idea/
+powershell.cmd
+
