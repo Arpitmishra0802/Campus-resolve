@@ -9,7 +9,13 @@ from datetime import datetime
 from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DB_PATH = os.environ.get("DATABASE_PATH", "campus_resolve.db")
+# On Vercel, only /tmp is writable. Detect and use it automatically.
+if os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"):
+    DB_PATH = os.environ.get("DATABASE_PATH", "/tmp/campus_resolve.db")
+    UPLOAD_DIR = "/tmp/uploads"
+else:
+    DB_PATH = os.environ.get("DATABASE_PATH", "campus_resolve.db")
+    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "static", "uploads")
 
 @contextmanager
 def get_db():
