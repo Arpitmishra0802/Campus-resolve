@@ -7,7 +7,7 @@ import os
 import uuid
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, 
-    session, jsonify, abort
+    session, jsonify, abort, send_from_directory
 )
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
@@ -16,7 +16,7 @@ from models import (
     init_db, get_db, create_user, get_user_by_email, get_user_by_id,
     create_complaint, get_complaint_by_ticket_id, get_complaint_timeline,
     get_student_complaints, get_all_complaints, get_complaint_counts,
-    update_complaint_status_and_remarks
+    update_complaint_status_and_remarks, UPLOAD_DIR
 )
 from auth import (
     generate_csrf_token, validate_csrf, login_user, logout_user,
@@ -25,15 +25,44 @@ from auth import (
 )
 from ai_model.classifier import predict_complaint_category
 
+# Detect Vercel environment
+IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
+
 # Initialize Flask App
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'campus-resolve-dev-secret-key-2026')
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB max limit
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
+# Upload folder: /tmp/uploads on Vercel, static/uploads locally
+if IS_VERCEL:
+    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
+else:
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Auto-initialize database and create admin account on every cold start
+def _bootstrap():
+    init_db()
+    # Ensure management account always exists (important on Vercel cold starts)
+    admin = get_user_by_email("admin@campus.edu")
+    if not admin:
+        create_user("Estate & Facilities Officer", "admin@campus.edu",
+                    os.environ.get("ADMIN_PASSWORD", "Admin@123"), role="management")
+
+_bootstrap()
+
+# Helper function to validate file extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Route to serve uploaded complaint photos (from /tmp on Vercel, static/uploads locally)
+@app.route('/uploads/<path:filename>')
+@login_required
+def serve_upload(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # Helper function to validate file extensions
 def allowed_file(filename):
