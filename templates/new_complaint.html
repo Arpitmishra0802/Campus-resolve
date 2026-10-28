@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Campus Grievance — Campus Resolve{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 w-full py-6 space-y-6">
+
+  <!-- Breadcrumb & Header -->
+  <div class="space-y-1">
+    <a href="{{ url_for('student_dashboard_view') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+      <span>Back to My Grievances</span>
+    </a>
+    <h1 class="text-xl sm:text-2xl font-bold text-on-surface">Submit New Campus Grievance</h1>
+    <p class="text-xs sm:text-sm text-on-surface-variant">Report an infrastructure or facility issue. The AI module will automatically suggest a category based on your description.</p>
+  </div>
+
+  <!-- Complaint Form Card -->
+  <div class="bg-surface-container-lowest rounded-2xl p-5 sm:p-8 shadow-sm border border-surface-container-high">
+    <form method="POST" action="{{ url_for('new_complaint_view') }}" enctype="multipart/form-data" class="space-y-5" id="complaintForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <!-- Complaint Title -->
+      <div class="space-y-1.5">
+        <label for="title" class="block text-xs font-semibold text-on-surface">
+          Grievance Title <span class="text-error">*</span>
+        </label>
+        <div class="relative">
+          <input 
+            type="text" 
+            id="title" 
+            name="title" 
+            required 
+            placeholder="e.g. Broken AC unit leaking water in Lecture Hall B" 
+            class="w-full bg-surface-container-low text-on-surface text-sm px-3.5 py-2.5 rounded-xl border border-surface-container-high focus:border-secondary focus:bg-surface-container-lowest outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Campus Location -->
+      <div class="space-y-1.5">
+        <label for="location" class="block text-xs font-semibold text-on-surface">
+          Campus Location / Room <span class="text-error">*</span>
+        </label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">pin_drop</span>
+          <input 
+            type="text" 
+            id="location" 
+            name="location" 
+            required 
+            placeholder="e.g. West Wing 2F, Lecture Hall B or CS Lab 2" 
+            class="w-full bg-surface-container-low text-on-surface text-sm pl-10 pr-3 py-2.5 rounded-xl border border-surface-container-high focus:border-secondary focus:bg-surface-container-lowest outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Detailed Description -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <label for="description" class="block text-xs font-semibold text-on-surface">
+            Detailed Incident Description <span class="text-error">*</span>
+          </label>
+          <span class="text-[11px] text-outline" id="charCounter">0 characters</span>
+        </div>
+        <textarea 
+          id="description" 
+          name="description" 
+          required 
+          rows="4" 
+          placeholder="Describe the issue in detail. State what is broken, what noise or leakage is occurring, and when it started..." 
+          class="w-full bg-surface-container-low text-on-surface text-sm p-3.5 rounded-xl border border-surface-container-high focus:border-secondary focus:bg-surface-container-lowest outline-none transition-all"
+        ></textarea>
+      </div>
+
+      <!-- AI Category Suggestion Box -->
+      <div id="aiSuggestionBox" class="bg-surface-container-low p-4 rounded-xl border border-surface-container-high space-y-2.5 transition-all">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[20px]">psychology</span>
+            <span class="text-xs font-bold text-on-surface">AI Smart Category Predictor</span>
+          </div>
+          <button 
+            type="button" 
+            id="triggerAiBtn" 
+            onclick="analyzeDescription()" 
+            class="px-2.5 py-1 rounded-lg bg-surface-container text-secondary text-xs font-semibold hover:bg-surface-container-high flex items-center gap-1 transition-colors"
+          >
+            <span class="material-symbols-outlined text-[14px]">auto_fix_high</span>
+            <span>Analyze Now</span>
+          </button>
+        </div>
+
+        <div id="aiResultContainer" class="flex items-center justify-between bg-surface-container-lowest p-3 rounded-lg border border-surface-container-high">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-on-surface-variant">Recommended:</span>
+            <span id="aiCategoryBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-secondary-fixed text-on-secondary-fixed">
+              Type description above
+            </span>
+            <span id="aiConfidenceBadge" class="text-[11px] text-outline font-medium"></span>
+          </div>
+          <button 
+            type="button" 
+            id="applyCategoryBtn" 
+            onclick="applySuggestedCategory()" 
+            class="hidden px-2.5 py-1 rounded-lg bg-secondary text-on-secondary text-xs font-semibold shadow-sm hover:bg-secondary/90 transition-all"
+          >
+            Apply to Form
+          </button>
+        </div>
+        <p class="text-[11px] text-outline">
+          Powered by Scikit-Learn TF-IDF vectorization and Multinomial Naive Bayes. You may keep this suggestion or choose manually below.
+        </p>
+      </div>
+
+      <!-- Manual Category Selection -->
+      <div class="space-y-1.5">
+        <label for="category" class="block text-xs font-semibold text-on-surface">
+          Assigned Departmental Category <span class="text-error">*</span>
+        </label>
+        <div class="relative">
+          <select 
+            id="category" 
+            name="category" 
+            required 
+            class="w-full appearance-none bg-surface-container-low text-on-surface text-sm px-3.5 py-2.5 rounded-xl border border-surface-container-high focus:border-secondary outline-none"
+          >
+            <option value="" disabled selected>Select appropriate category...</option>
+            <option value="Electrical">Electrical (Power, Lights, Fans, ACs)</option>
+            <option value="Cleaning">Cleaning (Sanitation, Waste Bins, Spills)</option>
+            <option value="Internet">Internet (Wi-Fi, LAN, Routers, ERP)</option>
+            <option value="Classroom Equipment">Classroom Equipment (Projector, Audio, Whiteboard)</option>
+            <option value="Plumbing">Plumbing (Water, Taps, Washrooms, Leaks)</option>
+            <option value="Other">Other (General Campus Facility Issue)</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant text-[18px]">expand_more</span>
+        </div>
+      </div>
+
+      <!-- Photo Evidence Upload with Live Preview -->
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-on-surface">
+          Photo Evidence (Optional, max 5MB — JPG, PNG, WEBP)
+        </label>
+        
+        <div class="border-2 border-dashed border-surface-container-high hover:border-secondary rounded-xl p-4 sm:p-6 text-center bg-surface-container-low transition-colors relative cursor-pointer" onclick="document.getElementById('photoInput').click()">
+          <input 
+            type="file" 
+            id="photoInput" 
+            name="photo" 
+            accept="image/png, image/jpeg, image/jpg, image/webp" 
+            class="hidden" 
+            onchange="handlePhotoSelect(event)"
+          />
+          <div class="flex flex-col items-center justify-center space-y-1.5">
+            <span class="material-symbols-outlined text-[36px] text-secondary">add_photo_alternate</span>
+            <div class="text-xs font-bold text-on-surface">Click to upload photo evidence</div>
+            <div class="text-[11px] text-outline">Supported: JPG, PNG, WEBP (Maximum size: 5 MB)</div>
+          </div>
+        </div>
+
+        <!-- Selected Image Preview Container -->
+        <div id="imagePreviewContainer" class="hidden bg-surface-container-low p-3 rounded-xl border border-surface-container-high flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <img id="imagePreview" src="" alt="Photo Evidence Preview" class="w-16 h-16 rounded-lg object-cover border border-surface-container-high"/>
+            <div>
+              <p id="imageFileName" class="text-xs font-bold text-on-surface truncate max-w-[200px]"></p>
+              <p id="imageFileSize" class="text-[11px] text-outline"></p>
+            </div>
+          </div>
+          <button type="button" onclick="removeSelectedPhoto()" class="p-2 text-outline hover:text-error rounded-full transition-colors">
+            <span class="material-symbols-outlined text-[20px]">delete</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Cluster -->
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-surface-container-high">
+        <a href="{{ url_for('student_dashboard_view') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-surface-container-high text-on-surface text-center font-semibold text-sm hover:bg-surface-container transition-colors">
+          Cancel
+        </a>
+        <button 
+          type="submit" 
+          id="submitGrievanceBtn" 
+          class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-secondary text-on-secondary font-semibold text-sm shadow-md hover:bg-secondary/90 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <span class="material-symbols-outlined text-[18px]">send</span>
+          <span>Submit Grievance</span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let predictedCategory = null;
+  let debounceTimer = null;
+
+  const descField = document.getElementById('description');
+  const charCounter = document.getElementById('charCounter');
+  const categorySelect = document.getElementById('category');
+
+  descField.addEventListener('input', function() {
+    charCounter.innerText = `${this.value.length} characters`;
+    clearTimeout(debounceTimer);
+    if (this.value.trim().length >= 15) {
+      debounceTimer = setTimeout(analyzeDescription, 600);
+    }
+  });
+
+  async function analyzeDescription() {
+    const text = descField.value.trim();
+    if (!text || text.length < 5) return;
+
+    const badge = document.getElementById('aiCategoryBadge');
+    const confBadge = document.getElementById('aiConfidenceBadge');
+    const applyBtn = document.getElementById('applyCategoryBtn');
+
+    badge.innerText = 'Analyzing...';
+    badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-surface-container-high text-on-surface-variant animate-pulse';
+
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const response = await fetch('/api/predict-category', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ description: text })
+      });
+
+      const data = await response.json();
+      if (data.status === 'success' && data.category) {
+        predictedCategory = data.category;
+        const confidencePct = Math.round(data.confidence * 100);
+
+        badge.innerText = data.category;
+        badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#eff6ff] text-secondary border border-secondary/20';
+        confBadge.innerText = `Confidence: ${confidencePct}%`;
+        applyBtn.classList.remove('hidden');
+
+        // If category is not selected yet, auto-select it
+        if (!categorySelect.value) {
+          applySuggestedCategory();
+        }
+      } else {
+        badge.innerText = 'Could not classify';
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant';
+        confBadge.innerText = '';
+        applyBtn.classList.add('hidden');
+      }
+    } catch (err) {
+      console.error('AI Prediction error:', err);
+      badge.innerText = 'Service offline';
+    }
+  }
+
+  function applySuggestedCategory() {
+    if (predictedCategory) {
+      categorySelect.value = predictedCategory;
+      const applyBtn = document.getElementById('applyCategoryBtn');
+      applyBtn.innerText = 'Applied!';
+      setTimeout(() => { applyBtn.innerText = 'Apply to Form'; }, 1500);
+    }
+  }
+
+  function handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File is too large! Maximum allowed size is 5MB.");
+      event.target.value = "";
+      return;
+    }
+
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+    const fileName = document.getElementById('imageFileName');
+    const fileSize = document.getElementById('imageFileSize');
+
+    fileName.innerText = file.name;
+    fileSize.innerText = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      previewContainer.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeSelectedPhoto() {
+    document.getElementById('photoInput').value = "";
+    document.getElementById('imagePreviewContainer').classList.add('hidden');
+    document.getElementById('imagePreview').src = "";
+  }
+</script>
+{% endblock %}
+
