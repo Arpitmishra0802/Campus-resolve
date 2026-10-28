@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ complaint.ticket_id }} — Campus Resolve{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 w-full py-6 space-y-6">
+
+  <!-- Breadcrumb & Back Link -->
+  <div class="flex items-center justify-between">
+    <a href="{{ url_for('management_portal_view') if session.get('user_role') == 'management' else url_for('student_dashboard_view') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+      <span>Back to {% if session.get('user_role') == 'management' %}Queue Triage{% else %}My Grievances{% endif %}</span>
+    </a>
+
+    <span class="text-xs text-outline font-medium">Logged on {{ complaint.created_at }}</span>
+  </div>
+
+  <!-- Primary Complaint Card -->
+  <article class="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container-high overflow-hidden">
+    <div class="p-5 sm:p-7 space-y-5">
+      
+      <!-- Header Ribbon -->
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-secondary">#{{ complaint.ticket_id }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-container text-on-surface-variant">
+              {{ complaint.category }}
+            </span>
+            <!-- Status Pill -->
+            {% if complaint.status == 'Submitted' %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#fff7ed] text-[#9a3412]">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
+                Submitted
+              </span>
+            {% elif complaint.status == 'In Progress' %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                In Progress
+              </span>
+            {% elif complaint.status == 'Resolved' %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#166534]">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                Resolved
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant">
+                <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                Closed
+              </span>
+            {% endif %}
+          </div>
+          <h1 class="text-xl sm:text-2xl font-bold text-on-surface">{{ complaint.title }}</h1>
+        </div>
+
+        <!-- Priority Badge -->
+        <div>
+          {% if complaint.priority == 'Critical' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-error text-on-error">Critical Priority</span>
+          {% elif complaint.priority == 'High' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-error-container text-on-error-container">High Priority</span>
+          {% elif complaint.priority == 'Medium' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#fef3c7] text-[#b45309]">Medium Priority</span>
+          {% else %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-surface-container-high text-on-surface">Low Priority</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Student & Location Meta Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-surface-container-low p-3 rounded-xl border border-surface-container-high">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+            {{ complaint.student_name[0] }}
+          </div>
+          <div>
+            <p class="text-xs font-bold text-on-surface">{{ complaint.student_name }}</p>
+            <p class="text-[11px] text-outline">{{ complaint.student_email }}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+          <span class="material-symbols-outlined text-[16px] text-secondary">pin_drop</span>
+          <span>Location: <strong>{{ complaint.location }}</strong></span>
+        </div>
+      </div>
+
+      <!-- Grievance Statement / Description -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Incident Statement</h3>
+        <div class="bg-surface-container-lowest p-4 rounded-xl border border-surface-container-high text-sm sm:text-base text-on-surface leading-relaxed whitespace-pre-line">
+          {{ complaint.description }}
+        </div>
+      </div>
+
+      <!-- Photo Evidence Attachment Section -->
+      {% if complaint.image %}
+        <div class="space-y-2 pt-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-secondary">image</span>
+              Photo Evidence Attached
+            </span>
+            <a href="{{ url_for('static', filename=complaint.image) }}" target="_blank" class="text-xs font-semibold text-secondary hover:underline flex items-center gap-1">
+              <span>Open Full Image</span>
+              <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+            </a>
+          </div>
+
+          <div class="relative w-full max-h-96 rounded-xl overflow-hidden border border-surface-container-high bg-surface-container-high">
+            <img 
+              src="{{ url_for('static', filename=complaint.image) }}" 
+              alt="Grievance Evidence for {{ complaint.ticket_id }}" 
+              class="w-full h-auto max-h-96 object-contain bg-black/5"
+            />
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Management Action Drawer / Panel (Only shown to authenticated Management staff) -->
+    {% if session.get('user_role') == 'management' %}
+      <div class="bg-surface-container-low p-5 sm:p-7 border-t border-surface-container-high space-y-5">
+        <div class="flex items-center justify-between border-b border-surface-container-high pb-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[22px]">tune</span>
+            <h2 class="text-sm sm:text-base font-bold text-on-surface">Management Action &amp; Triage Control</h2>
+          </div>
+          <span class="text-xs font-semibold text-secondary">Officer: {{ session.get('user_name') }}</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('update_complaint_status_view', ticket_id=complaint.ticket_id) }}" class="space-y-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+          <!-- Priority Selector -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-on-surface">Triage Priority Level</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="priority" value="Low" class="hidden peer" {% if complaint.priority == 'Low' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs font-medium text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-surface-container-highest peer-checked:border-on-surface peer-checked:font-bold transition-all">
+                  Low
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="priority" value="Medium" class="hidden peer" {% if complaint.priority == 'Medium' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs font-medium text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-[#fef3c7] peer-checked:border-[#b45309] peer-checked:text-[#b45309] peer-checked:font-bold transition-all">
+                  Medium
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="priority" value="High" class="hidden peer" {% if complaint.priority == 'High' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs font-medium text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-error-container peer-checked:border-error peer-checked:text-on-error-container peer-checked:font-bold transition-all">
+                  High
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="priority" value="Critical" class="hidden peer" {% if complaint.priority == 'Critical' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs font-medium text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-error peer-checked:border-error peer-checked:text-on-error peer-checked:font-bold transition-all">
+                  Critical
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Status Lifecycle Pill Selector -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-on-surface">Update Lifecycle Stage</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="status" value="Submitted" class="hidden peer" {% if complaint.status == 'Submitted' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-[#fff7ed] peer-checked:border-[#f97316] peer-checked:text-[#9a3412] peer-checked:font-bold transition-all">
+                  Submitted
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="status" value="In Progress" class="hidden peer" {% if complaint.status == 'In Progress' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-secondary peer-checked:border-secondary peer-checked:text-on-secondary peer-checked:font-bold transition-all">
+                  In Progress
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="status" value="Resolved" class="hidden peer" {% if complaint.status == 'Resolved' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-[#16a34a] peer-checked:border-[#16a34a] peer-checked:text-on-primary peer-checked:font-bold transition-all">
+                  Resolved
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="status" value="Closed" class="hidden peer" {% if complaint.status == 'Closed' %}checked{% endif %}/>
+                <div class="py-2 px-3 rounded-lg text-xs text-center border border-surface-container-high bg-surface-container-lowest peer-checked:bg-surface-container-highest peer-checked:border-outline peer-checked:text-on-surface peer-checked:font-bold transition-all">
+                  Closed
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Official Remarks Input -->
+          <div class="space-y-1.5">
+            <label for="remarks" class="block text-xs font-bold text-on-surface">Facilities Remarks &amp; Student Broadcast</label>
+            <textarea 
+              id="remarks" 
+              name="remarks" 
+              rows="3" 
+              placeholder="Enter official progress update or resolution remarks for student..." 
+              class="w-full bg-surface-container-lowest text-on-surface text-sm p-3 rounded-xl border border-surface-container-high focus:border-secondary outline-none transition-all"
+            ></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row items-center gap-2 pt-2">
+            <button 
+              type="submit" 
+              name="action" 
+              value="update_status" 
+              class="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-secondary text-on-secondary font-semibold text-sm shadow-md hover:bg-secondary/90 active:scale-98 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span class="material-symbols-outlined text-[18px]">outgoing_mail</span>
+              <span>Update Status &amp; Notify Student</span>
+            </button>
+            <button 
+              type="submit" 
+              name="action" 
+              value="resolve" 
+              onclick="document.querySelector('input[name=status][value=Resolved]').checked = true"
+              class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-[#16a34a] text-on-primary font-semibold text-sm shadow-sm hover:opacity-90 flex items-center justify-center gap-1"
+            >
+              <span class="material-symbols-outlined text-[18px]">task_alt</span>
+              <span>Mark as Resolved</span>
+            </button>
+            <button 
+              type="submit" 
+              name="action" 
+              value="close" 
+              onclick="document.querySelector('input[name=status][value=Closed]').checked = true"
+              class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-surface-container-highest text-on-surface-variant font-semibold text-sm hover:bg-outline-variant flex items-center justify-center gap-1"
+            >
+              <span class="material-symbols-outlined text-[18px]">archive</span>
+              <span>Close Ticket</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    {% endif %}
+
+  </article>
+
+  <!-- Chronological Audit Timeline Section matching Stitch DESIGN.md -->
+  <section class="bg-surface-container-lowest rounded-2xl p-5 sm:p-7 shadow-sm border border-surface-container-high space-y-4">
+    <div class="flex items-center justify-between border-b border-surface-container-high pb-3">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-secondary text-[22px]">history</span>
+        <h2 class="text-base font-bold text-on-surface">Complaint Tracking &amp; Audit Log</h2>
+      </div>
+      <span class="text-xs text-outline font-semibold">{{ timeline|length }} Event(s) Recorded</span>
+    </div>
+
+    <!-- Vertical Timeline Container -->
+    <div class="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-[#e2e8f0]">
+      {% for event in timeline %}
+        <div class="relative group">
+          <!-- Timeline Node Icon -->
+          <div class="absolute -left-[27px] sm:-left-[35px] top-1 w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-surface-container-lowest
+            {% if event.status == 'Resolved' %}
+              bg-[#10b981] text-white
+            {% elif event.status == 'In Progress' %}
+              bg-secondary text-white
+            {% elif event.status == 'Closed' %}
+              bg-[#64748b] text-white
+            {% else %}
+              bg-[#f59e0b] text-white
+            {% endif %}">
+            <span class="material-symbols-outlined text-[14px]">
+              {% if event.status == 'Resolved' %}check{% elif event.status == 'In Progress' %}sync{% elif event.status == 'Closed' %}archive{% else %}send{% endif %}
+            </span>
+          </div>
+
+          <!-- Event Content Card -->
+          <div class="bg-surface-container-low p-3.5 sm:p-4 rounded-xl border border-surface-container-high space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-on-surface">Stage: {{ event.status }}</span>
+                {% if event.management_name %}
+                  <span class="text-[11px] px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
+                    {{ event.management_name }} ({{ event.management_role or 'Staff' }})
+                  </span>
+                {% else %}
+                  <span class="text-[11px] px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-medium">
+                    Student Submission
+                  </span>
+                {% endif %}
+              </div>
+              <span class="text-[11px] text-outline">{{ event.created_at }}</span>
+            </div>
+
+            {% if event.message %}
+              <p class="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                {{ event.message }}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  </section>
+
+</div>
+{% endblock %}
+
